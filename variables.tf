@@ -62,17 +62,3 @@ locals {
   k8s_sources_templates_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}templates/${var.name}"
   k8s_sources_generated_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}generated/${var.name}"
 }
-
-output "ns_info" {
-  value = {
-    "name"            = var.name
-    "ci_deploy_token" = kubernetes_service_account.ci_deploy.default_secret_name                  // backward compatible with older gitlab integration, remove in next version
-    "dummy"           = "To wait for NS to be read - ${kubernetes_namespace.ns.metadata[0].name}" // .0.name fixes plan/apply error
-  }
-}
-
-output "ci_deploy_secret" {
-  value = {
-    data = data.kubernetes_secret.ci_deploy_token.data // string during plan, map after refresh
-  }
-}
