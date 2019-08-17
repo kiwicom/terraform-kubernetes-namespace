@@ -83,13 +83,13 @@ resource "kubernetes_cluster_role" "ci_deploy" {
 
   rule {
     api_groups = [
-      "*"]
-    resources  = [
-      "nodes"]
-    verbs      = [
+    "*"]
+    resources = [
+    "nodes"]
+    verbs = [
       "get",
       "list",
-      "watch"]
+    "watch"]
   }
 }
 
@@ -107,8 +107,8 @@ resource "kubernetes_cluster_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name      = concat(google_service_account.ci_deploy.*.email, [
-      var.deploy_user])[0]
+    name = concat(google_service_account.ci_deploy.*.email, [
+    var.deploy_user])[0]
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
@@ -140,11 +140,11 @@ resource "kubernetes_role" "ci_deploy" {
 
   rule {
     api_groups = [
-      "*"]
-    resources  = [
-      "*"]
-    verbs      = [
-      "*"]
+    "*"]
+    resources = [
+    "*"]
+    verbs = [
+    "*"]
   }
 }
 
@@ -163,8 +163,68 @@ resource "kubernetes_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name      = concat(google_service_account.ci_deploy.*.email, [
-      var.deploy_user])[0]
+    name = concat(google_service_account.ci_deploy.*.email, [
+    var.deploy_user])[0]
+  }
+}
+
+resource "kubernetes_role" "ci_deploy_read_dd_config" {
+  metadata {
+    name      = "ci-${kubernetes_namespace.ns.metadata[0].name}-dd-config"
+    namespace = "system"
+  }
+
+  rule {
+    api_groups = [
+    ""]
+    resources = [
+    "configmaps"]
+    resource_names = [
+      "dd-agent-config"
+    ]
+    verbs = [
+    "get"]
+  }
+}
+
+resource "kubernetes_role_binding" "ci_deploy_read_dd_config" {
+  metadata {
+    name      = "ci-${kubernetes_namespace.ns.metadata[0].name}-binding-dd-config"
+    namespace = "system"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.ci_deploy_read_dd_config.metadata[0].name
+  }
+
+  subject {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "User"
+    name = concat(google_service_account.ci_deploy.*.email, [
+    var.deploy_user])[0]
+    namespace = kubernetes_namespace.ns.metadata[0].name
+  }
+}
+
+resource "kubernetes_role_binding" "ci_deploy_k8s_read_dd_config" {
+  metadata {
+    name      = "ci-${kubernetes_namespace.ns.metadata[0].name}-binding-dd-config-k8s"
+    namespace = "system"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.ci_deploy_read_dd_config.metadata[0].name
+  }
+
+  subject {
+    api_group = ""
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.ci_deploy.metadata[0].name
+    namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
 
