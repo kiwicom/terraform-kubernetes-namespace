@@ -12,7 +12,7 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   data = {
-    ".dockercfg" = "{\"registry.skypicker.com:5005\":{\"username\":\"rancher\",\"password\":\"${var.gitlab_rancher_password}\",\"email\":\"depricated@kiwi.com\",\"auth\":\"cmFuY2hlcjpwOGN1Q25UbnhHdWw=\"}}"
+    ".dockercfg" = "{\"registry.skypicker.com:5005\":{\"username\":\"rancher\",\"password\":\"${var.gitlab_rancher_password}\"}}"
   }
 
   type = "kubernetes.io/dockercfg"
