@@ -7,6 +7,21 @@ variable "vault_path" {
   default     = ""
 }
 
+variable "vault_token" {
+  description = "Vault secrets token - can be used to syncronize secrets from Vault"
+  default     = ""
+}
+
+variable "gitlab_registry" {
+  description = "Gitlab registry from where to pull images"
+  default     = "registry.skypicker.com:5005"
+}
+
+variable "gitlab_rancher_username" {
+  description = "Gitlab username of Rancher user"
+  default     = "rancher"
+}
+
 variable "gitlab_rancher_password" {
   description = "Gitlab password of Rancher user"
 }

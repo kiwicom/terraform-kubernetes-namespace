@@ -12,7 +12,7 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   data = {
-    ".dockercfg" = "{\"registry.skypicker.com:5005\":{\"username\":\"rancher\",\"password\":\"${var.gitlab_rancher_password}\"}}"
+    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}}"
   }
 
   type = "kubernetes.io/dockercfg"
@@ -62,6 +62,18 @@ resource "kubernetes_secret" "k8s_secrets" {
 
   count = var.vault_path == "" ? 0 : 1
   data  = data.vault_generic_secret.k8s[0].data
+}
+
+resource "kubernetes_secret" "vault_token_secret" {
+  metadata {
+    name      = "${kubernetes_namespace.ns.metadata[0].name}-vault-token-secret"
+    namespace = kubernetes_namespace.ns.metadata[0].name
+  }
+
+  count = var.vault_token == "" ? 0 : 1
+  data  = {
+    VAULT_TOKEN = var.vault_token
+  }
 }
 
 resource "google_service_account" "ci_deploy" {
