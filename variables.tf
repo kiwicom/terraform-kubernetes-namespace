@@ -1,14 +1,14 @@
+variable "project_id" {
+  description = "Google Cloud Platform project id"
+  default     = ""
+}
+
 variable "name" {
   description = "Namespace name"
 }
 
 variable "vault_path" {
   description = "Like secret/team_name/cluster_name/namespace"
-  default     = ""
-}
-
-variable "vault_token" {
-  description = "Vault secrets token - can be used to syncronize secrets from Vault"
   default     = ""
 }
 
