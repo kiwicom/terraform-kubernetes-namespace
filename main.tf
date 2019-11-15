@@ -12,7 +12,7 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   data = {
-    ".dockercfg" = "{\"registry.skypicker.com:5005\":{\"username\":\"rancher\",\"password\":\"${var.gitlab_rancher_password}\"}}"
+    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}}"
   }
 
   type = "kubernetes.io/dockercfg"
@@ -54,6 +54,34 @@ resource "template_dir" "k8s" {
   vars = merge(var.additional_k8s_vars)
 }
 
+resource vault_policy "project_namespace_policy" {
+  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
+
+  policy = <<EOT
+path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
+  policy = "read"
+}
+EOT
+}
+
+resource "vault_token_auth_backend_role" "project_namespace_role" {
+  count            = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
+  allowed_policies = [vault_policy.project_namespace_policy[0].name]
+  orphan           = false
+}
+
+resource "vault_token" "project_namespace_token" {
+  count             = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
+  role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
+  policies          = [vault_policy.project_namespace_policy[0].name]
+  no_default_policy = true
+  renewable         = true
+  ttl               = 15768000 // 0.5 years
+}
+
 resource "kubernetes_secret" "k8s_secrets" {
   metadata {
     name      = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
@@ -62,6 +90,19 @@ resource "kubernetes_secret" "k8s_secrets" {
 
   count = var.vault_path == "" ? 0 : 1
   data  = data.vault_generic_secret.k8s[0].data
+}
+
+resource "kubernetes_secret" "vault_token_secret" {
+  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+
+  metadata {
+    name      = "${kubernetes_namespace.ns.metadata[0].name}-vault-token-secret"
+    namespace = kubernetes_namespace.ns.metadata[0].name
+  }
+
+  data  = {
+    VAULT_TOKEN = vault_token.project_namespace_token[0].client_token
+  }
 }
 
 resource "google_service_account" "ci_deploy" {

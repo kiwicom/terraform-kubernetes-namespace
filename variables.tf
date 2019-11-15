@@ -1,3 +1,8 @@
+variable "project_id" {
+  description = "Google Cloud Platform project id"
+  default     = ""
+}
+
 variable "name" {
   description = "Namespace name"
 }
@@ -5,6 +10,16 @@ variable "name" {
 variable "vault_path" {
   description = "Like secret/team_name/cluster_name/namespace"
   default     = ""
+}
+
+variable "gitlab_registry" {
+  description = "Gitlab registry from where to pull images"
+  default     = "registry.skypicker.com:5005"
+}
+
+variable "gitlab_rancher_username" {
+  description = "Gitlab username of Rancher user"
+  default     = "rancher"
 }
 
 variable "gitlab_rancher_password" {
