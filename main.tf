@@ -101,7 +101,7 @@ resource "kubernetes_secret" "vault_token_secret" {
   }
 
   data  = {
-    VAULT_TOKEN = vault_token.project_namespace_token.client_token
+    VAULT_TOKEN = vault_token.project_namespace_token[0].client_token
   }
 }
 
