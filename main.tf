@@ -96,7 +96,7 @@ resource "kubernetes_secret" "vault_token_secret" {
   count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
 
   metadata {
-    name      = "${kubernetes_namespace.ns.metadata[0].name}-vault-token-secret"
+    name      = "vault-token-secret"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
