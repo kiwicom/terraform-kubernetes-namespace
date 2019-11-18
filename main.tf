@@ -59,11 +59,6 @@ resource vault_policy "project_namespace_policy" {
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
-# Allow tokens to look up their own properties
-path "auth/token/lookup-self" {
-    capabilities = ["read"]
-}
-
 path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
   policy = "read"
 }
@@ -73,7 +68,7 @@ EOT
 resource "vault_token" "project_namespace_token" {
   count             = (var.project_id == "" || var.vault_path == "") ? 0 : 1
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
-  policies          = [vault_policy.project_namespace_policy[0].name]
+  policies          = [vault_policy.project_namespace_policy[0].name, "tf-gcp-projects-token-default"]
   no_default_policy = true
   renewable         = true
   ttl               = 15768000 // 0.5 years
