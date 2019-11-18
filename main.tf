@@ -71,6 +71,7 @@ resource "vault_token" "project_namespace_token" {
   policies          = [vault_policy.project_namespace_policy[0].name, "tf-gcp-projects-token-default"]
   no_default_policy = true
   renewable         = true
+  no_parent         = true
   ttl               = 15768000 // 0.5 years
 }
 
