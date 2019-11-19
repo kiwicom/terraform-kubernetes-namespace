@@ -70,9 +70,17 @@ path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
 EOT
 }
 
+resource "vault_token_auth_backend_role" "project_namespace_role" {
+  count            = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
+  allowed_policies = [vault_policy.project_namespace_policy[0].name]
+  orphan           = true
+}
+
 resource "vault_token" "project_namespace_token" {
   count             = (var.project_id == "" || var.vault_path == "") ? 0 : 1
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
+  role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
   no_default_policy = true
   renewable         = true
