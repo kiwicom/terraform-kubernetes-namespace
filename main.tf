@@ -46,6 +46,11 @@ data "vault_generic_secret" "k8s" {
   path  = var.vault_path
 }
 
+data "vault_generic_secret" "namespace_secrets" {
+  count = var.vault_base_path == "" ? 0 : 1
+  path  = "${var.vault_base_path}/ns-${var.name}-secrets"
+}
+
 resource "template_dir" "k8s" {
   count           = var.run_template_dir == true ? 1 : 0
   source_dir      = local.k8s_sources_templates_path
@@ -54,8 +59,9 @@ resource "template_dir" "k8s" {
   vars = merge(var.additional_k8s_vars)
 }
 
+// TODO: remove (var.project_id == "" || var.vault_path == "") after migration
 resource vault_policy "project_namespace_policy" {
-  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
@@ -70,15 +76,16 @@ path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
 EOT
 }
 
+// TODO: remove (var.project_id == "" || var.vault_path == "") after migration
 resource "vault_token_auth_backend_role" "project_namespace_role" {
-  count            = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count            = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
 }
 
 resource "vault_token" "project_namespace_token" {
-  count             = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count             = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
@@ -87,26 +94,32 @@ resource "vault_token" "project_namespace_token" {
   ttl               = 15768000 // 0.5 years
 }
 
+// TODO: switch completely to vault_base_path after migration
 resource "kubernetes_secret" "k8s_secrets" {
+  count = var.vault_path == "" ? (var.vault_base_path == "" ? 0 : 1) : 1
+
   metadata {
     name      = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  count = var.vault_path == "" ? 0 : 1
-  data  = data.vault_generic_secret.k8s[0].data
+  data  = var.vault_path == "" ? data.vault_generic_secret.namespace_secrets[0].data : data.vault_generic_secret.k8s[0].data
 }
 
 resource "kubernetes_secret" "vault_token_secret" {
-  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
 
   metadata {
-    name      = "vault-token-secret"
+    name      = "vault-sync-secret"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  data  = {
-    VAULT_TOKEN = vault_token.project_namespace_token[0].client_token
+  data = {
+    VAULT_TOKEN        = vault_token.project_namespace_token[0].client_token
+    VAULT_ADDR         = var.vault_addr
+    VAULT_PATH         = data.vault_generic_secret.namespace_secrets[0].path
+    TARGET_SECRET_NAME = var.vault_target_secret_name
+    RECONCILE_PERIOD   = var.vault_reconcile_period
   }
 }
 

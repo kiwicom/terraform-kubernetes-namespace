@@ -1,12 +1,41 @@
+variable "name" {
+  description = "Namespace name"
+}
+
+// TODO: remove default = "" after migraton
 variable "project_id" {
   description = "Google Cloud Platform project id"
   default     = ""
 }
 
-variable "name" {
-  description = "Namespace name"
+variable "vault_sync_disable" {
+  description = "Disable sync of secrets from Vault"
+  default = false
 }
 
+// TODO: remove default = "" after migraton
+variable "vault_addr" {
+  description = "Vault address"
+  default     = ""
+}
+
+// TODO: remove default = "" after migration
+variable "vault_base_path" {
+  description = "Like secret/project/project_name"
+  default     = ""
+}
+
+variable "vault_target_secret_name" {
+  description = "Name of target Kubernetes secret"
+  default     = "secrets-from-vault"
+}
+
+variable "vault_reconcile_period" {
+  description = ""
+  default     = "5m"
+}
+
+// TODO: will be removed
 variable "vault_path" {
   description = "Like secret/team_name/cluster_name/namespace"
   default     = ""
