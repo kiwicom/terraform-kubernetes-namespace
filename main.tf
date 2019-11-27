@@ -103,7 +103,7 @@ resource "kubernetes_secret" "k8s_secrets" {
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  data  = var.vault_path == "" ? data.vault_generic_secret.namespace_secrets[0].data : data.vault_generic_secret.k8s[0].data
+  data = var.vault_path == "" ? data.vault_generic_secret.namespace_secrets[0].data : data.vault_generic_secret.k8s[0].data
 }
 
 resource "kubernetes_secret" "vault_token_secret" {
@@ -118,7 +118,7 @@ resource "kubernetes_secret" "vault_token_secret" {
     VAULT_TOKEN        = vault_token.project_namespace_token[0].client_token
     VAULT_ADDR         = var.vault_addr
     VAULT_PATH         = data.vault_generic_secret.namespace_secrets[0].path
-    TARGET_SECRET_NAME = var.vault_target_secret_name
+    TARGET_SECRET_NAME = var.vault_target_secret_name == "" ? kubernetes_secret.k8s_secrets[0].metadata[0].name : var.vault_target_secret_name
     RECONCILE_PERIOD   = var.vault_reconcile_period
   }
 }

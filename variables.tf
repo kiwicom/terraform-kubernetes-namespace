@@ -10,7 +10,7 @@ variable "project_id" {
 
 variable "vault_sync_disable" {
   description = "Disable sync of secrets from Vault"
-  default = false
+  default     = false
 }
 
 // TODO: remove default = "" after migraton
@@ -26,12 +26,12 @@ variable "vault_base_path" {
 }
 
 variable "vault_target_secret_name" {
-  description = "Name of target Kubernetes secret"
-  default     = "secrets-from-vault"
+  description = "Kubernetes secret target where data from Vault will be synced. Will take {kubernetes_namespace.ns.metadata[0].name}-secrets as default"
+  default     = ""
 }
 
 variable "vault_reconcile_period" {
-  description = ""
+  description = "Vault secrets sync period"
   default     = "5m"
 }
 
