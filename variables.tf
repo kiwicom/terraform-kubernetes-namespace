@@ -35,7 +35,7 @@ variable "vault_reconcile_period" {
   default     = "5m"
 }
 
-// TODO: will be removed
+// TODO: will be removed after migration
 variable "vault_path" {
   description = "Like secret/team_name/cluster_name/namespace"
   default     = ""
