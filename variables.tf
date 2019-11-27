@@ -8,11 +8,6 @@ variable "project_id" {
   default     = ""
 }
 
-variable "vault_sync_disable" {
-  description = "Disable sync of secrets from Vault"
-  default     = false
-}
-
 // TODO: remove default = "" after migraton
 variable "vault_addr" {
   description = "Vault address"

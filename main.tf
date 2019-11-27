@@ -61,7 +61,7 @@ resource "template_dir" "k8s" {
 
 // TODO: remove (var.project_id == "" || var.vault_path == "") after migration
 resource vault_policy "project_namespace_policy" {
-  count = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
+  count = (var.project_id == "" || (var.vault_path == "" && var.vault_base_path == "")) ? 0 : 1
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
@@ -78,14 +78,14 @@ EOT
 
 // TODO: remove (var.project_id == "" || var.vault_path == "") after migration
 resource "vault_token_auth_backend_role" "project_namespace_role" {
-  count            = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
+  count            = (var.project_id == "" || (var.vault_path == "" && var.vault_base_path == "")) ? 0 : 1
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
 }
 
 resource "vault_token" "project_namespace_token" {
-  count             = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
+  count             = (var.project_id == "" || (var.vault_path == "" && var.vault_base_path)) ? 0 : 1
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
@@ -107,7 +107,7 @@ resource "kubernetes_secret" "k8s_secrets" {
 }
 
 resource "kubernetes_secret" "vault_token_secret" {
-  count = (var.project_id == "" || var.vault_path == "") || var.vault_sync_disable ? 0 : 1
+  count = (var.project_id == "" || (var.vault_path == "" && var.vault_base_path == "")) ? 0 : 1
 
   metadata {
     name      = "vault-sync-secret"
