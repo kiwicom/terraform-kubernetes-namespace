@@ -1,3 +1,11 @@
+locals {
+  vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
+  vault_addr               = var.vault_sync["addr"]
+  vault_base_path          = var.vault_sync["base_path"]
+  vault_target_secret_name = var.vault_sync["target_secret_name"]
+  vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "5m")
+}
+
 resource "kubernetes_namespace" "ns" {
   metadata {
     name   = var.name
@@ -46,6 +54,11 @@ data "vault_generic_secret" "k8s" {
   path  = var.vault_path
 }
 
+data "vault_generic_secret" "namespace_secrets" {
+  count = local.vault_sync_enabled ? 1 : 0
+  path  = "${local.vault_base_path}/ns-${var.name}-secrets"
+}
+
 resource "template_dir" "k8s" {
   count           = var.run_template_dir == true ? 1 : 0
   source_dir      = local.k8s_sources_templates_path
@@ -54,8 +67,10 @@ resource "template_dir" "k8s" {
   vars = merge(var.additional_k8s_vars)
 }
 
+// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource vault_policy "project_namespace_policy" {
-  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
@@ -70,15 +85,19 @@ path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
 EOT
 }
 
+// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "vault_token_auth_backend_role" "project_namespace_role" {
-  count            = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count            = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
 }
 
+// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "vault_token" "project_namespace_token" {
-  count             = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count             = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
@@ -87,26 +106,35 @@ resource "vault_token" "project_namespace_token" {
   ttl               = 15768000 // 0.5 years
 }
 
+// TODO: IS: count = var.vault_path != "" ? 1 : (local.vault_sync_enabled ? 1 : 0)
+// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "kubernetes_secret" "k8s_secrets" {
+  count = var.vault_path != "" ? 1 : (local.vault_sync_enabled ? 1 : 0)
+
   metadata {
     name      = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  count = var.vault_path == "" ? 0 : 1
-  data  = data.vault_generic_secret.k8s[0].data
+  data = var.vault_path == "" ? data.vault_generic_secret.namespace_secrets[0].data : data.vault_generic_secret.k8s[0].data
 }
 
+// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "kubernetes_secret" "vault_token_secret" {
-  count = (var.project_id == "" || var.vault_path == "") ? 0 : 1
+  count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
 
   metadata {
-    name      = "vault-token-secret"
+    name      = "vault-sync-secret"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  data  = {
-    VAULT_TOKEN = vault_token.project_namespace_token[0].client_token
+  data = {
+    VAULT_TOKEN        = vault_token.project_namespace_token[0].client_token
+    VAULT_ADDR         = local.vault_addr
+    VAULT_PATH         = data.vault_generic_secret.namespace_secrets[0].path
+    TARGET_SECRET_NAME = local.vault_target_secret_name == "" ? kubernetes_secret.k8s_secrets[0].metadata[0].name : local.vault_target_secret_name
+    RECONCILE_PERIOD   = local.vault_reconcile_period
   }
 }
 

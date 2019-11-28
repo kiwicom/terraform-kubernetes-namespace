@@ -1,12 +1,29 @@
+variable "name" {
+  description = "Namespace name"
+}
+
+// TODO: remove default = "" after migraton
 variable "project_id" {
   description = "Google Cloud Platform project id"
   default     = ""
 }
 
-variable "name" {
-  description = "Namespace name"
+variable "vault_sync" {
+  type = object({
+    addr               = string
+    base_path          = string
+    target_secret_name = string
+    reconcile_period   = string
+  })
+  default = {
+    addr               = ""
+    base_path          = ""
+    target_secret_name = ""
+    reconcile_period   = ""
+  }
 }
 
+// TODO: will be removed after migration
 variable "vault_path" {
   description = "Like secret/team_name/cluster_name/namespace"
   default     = ""
