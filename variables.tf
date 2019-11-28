@@ -10,16 +10,16 @@ variable "project_id" {
 
 variable "vault_sync" {
   type = object({
-    addr = string
-    base_path = string
+    addr               = string
+    base_path          = string
     target_secret_name = string
-    reconcile_period = string
+    reconcile_period   = string
   })
   default = {
-    addr = ""
-    base_path = ""
+    addr               = ""
+    base_path          = ""
     target_secret_name = ""
-    reconcile_period = ""
+    reconcile_period   = ""
   }
 }
 

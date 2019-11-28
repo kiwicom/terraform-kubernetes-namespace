@@ -1,9 +1,9 @@
 locals {
-  vault_sync_enabled = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
-  vault_addr = var.vault_sync["addr"]
-  vault_base_path = var.vault_sync["base_path"]
+  vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
+  vault_addr               = var.vault_sync["addr"]
+  vault_base_path          = var.vault_sync["base_path"]
   vault_target_secret_name = var.vault_sync["target_secret_name"]
-  vault_reconcile_period = coalesce(var.vault_sync["reconcile_period"], "5m")
+  vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "5m")
 }
 
 resource "kubernetes_namespace" "ns" {
