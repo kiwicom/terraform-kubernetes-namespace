@@ -8,26 +8,19 @@ variable "project_id" {
   default     = ""
 }
 
-// TODO: remove default = "" after migraton
-variable "vault_addr" {
-  description = "Vault address"
-  default     = ""
-}
-
-// TODO: remove default = "" after migration
-variable "vault_base_path" {
-  description = "Like secret/project/project_name"
-  default     = ""
-}
-
-variable "vault_target_secret_name" {
-  description = "Kubernetes secret target where data from Vault will be synced. Will take {kubernetes_namespace.ns.metadata[0].name}-secrets as default"
-  default     = ""
-}
-
-variable "vault_reconcile_period" {
-  description = "Vault secrets sync period"
-  default     = "5m"
+variable "vault_sync" {
+  type = object({
+    addr = string
+    base_path = string
+    target_secret_name = string
+    reconcile_period = string
+  })
+  default = {
+    addr = ""
+    base_path = ""
+    target_secret_name = ""
+    reconcile_period = ""
+  }
 }
 
 // TODO: will be removed after migration
