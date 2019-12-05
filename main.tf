@@ -1,8 +1,7 @@
 locals {
   vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
   vault_addr               = var.vault_sync["addr"]
-  vault_base_path          = var.vault_sync["base_path"]
-  vault_secrets_path       = var.vault_sync["secrets_path"]
+  vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "5m")
 }
@@ -57,7 +56,7 @@ data "vault_generic_secret" "k8s" {
 
 data "vault_generic_secret" "namespace_secrets" {
   count = local.vault_sync_enabled ? 1 : 0
-  path  = local.vault_secrets_path != "" ? "${local.vault_base_path}/${local.vault_secrets_path}"  : "${local.vault_base_path}/ns-${var.name}-secrets"
+  path  = local.vault_secrets_path
 }
 
 resource "template_dir" "k8s" {
@@ -80,7 +79,7 @@ path "auth/token/lookup-self" {
     capabilities = ["read"]
 }
 
-path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
+path "${local.vault_secrets_path}" {
   policy = "read"
 }
 EOT
@@ -159,13 +158,13 @@ resource "kubernetes_cluster_role" "ci_deploy" {
 
   rule {
     api_groups = [
-    "*"]
+      "*"]
     resources = [
-    "nodes"]
+      "nodes"]
     verbs = [
       "get",
       "list",
-    "watch"]
+      "watch"]
   }
 }
 
@@ -184,7 +183,7 @@ resource "kubernetes_cluster_role_binding" "ci_deploy" {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
     name = concat(google_service_account.ci_deploy.*.email, [
-    var.deploy_user])[0]
+      var.deploy_user])[0]
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
@@ -216,11 +215,11 @@ resource "kubernetes_role" "ci_deploy" {
 
   rule {
     api_groups = [
-    "*"]
+      "*"]
     resources = [
-    "*"]
+      "*"]
     verbs = [
-    "*"]
+      "*"]
   }
 }
 
@@ -240,7 +239,7 @@ resource "kubernetes_role_binding" "ci_deploy" {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
     name = concat(google_service_account.ci_deploy.*.email, [
-    var.deploy_user])[0]
+      var.deploy_user])[0]
   }
 }
 
@@ -252,14 +251,14 @@ resource "kubernetes_role" "ci_deploy_read_dd_config" {
 
   rule {
     api_groups = [
-    ""]
+      ""]
     resources = [
-    "configmaps"]
+      "configmaps"]
     resource_names = [
       "dd-agent-config"
     ]
     verbs = [
-    "get"]
+      "get"]
   }
 }
 
@@ -279,7 +278,7 @@ resource "kubernetes_role_binding" "ci_deploy_read_dd_config" {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
     name = concat(google_service_account.ci_deploy.*.email, [
-    var.deploy_user])[0]
+      var.deploy_user])[0]
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
