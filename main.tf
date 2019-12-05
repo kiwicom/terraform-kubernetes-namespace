@@ -82,10 +82,6 @@ path "auth/token/lookup-self" {
 path "${local.vault_secrets_path}" {
   policy = "read"
 }
-
-path "secret/gcp-project/${var.project_id}/ns-${var.name}-*" {
-  policy = "read"
-}
 EOT
 }
 
