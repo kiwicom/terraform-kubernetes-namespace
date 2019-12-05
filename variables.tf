@@ -12,12 +12,14 @@ variable "vault_sync" {
   type = object({
     addr               = string
     base_path          = string
+    secrets_path       = string
     target_secret_name = string
     reconcile_period   = string
   })
   default = {
     addr               = ""
     base_path          = ""
+    secrets_path       = ""
     target_secret_name = ""
     reconcile_period   = ""
   }
