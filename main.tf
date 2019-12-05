@@ -2,6 +2,7 @@ locals {
   vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
   vault_addr               = var.vault_sync["addr"]
   vault_base_path          = var.vault_sync["base_path"]
+  vault_secrets_path       = var.vault_sync["secrets_path"]
   vault_target_secret_name = var.vault_sync["target_secret_name"]
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "5m")
 }
@@ -56,7 +57,7 @@ data "vault_generic_secret" "k8s" {
 
 data "vault_generic_secret" "namespace_secrets" {
   count = local.vault_sync_enabled ? 1 : 0
-  path  = "${local.vault_base_path}/ns-${var.name}-secrets"
+  path  = local.vault_secrets_path != "" ? "${local.vault_base_path}/${local.vault_secrets_path}"  : "${local.vault_base_path}/ns-${var.name}-secrets"
 }
 
 resource "template_dir" "k8s" {
