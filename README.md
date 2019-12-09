@@ -15,7 +15,7 @@ module "example_project" {
   vault_sync = {
     addr               = "https://your-vault-address"
     base_path          = var.VAULT_PROJECT_SECRETS_PATH
-    secrets_path       = "" // defaults to "ns-{name}-secrets"
+    secrets_path       = ""
     target_secret_name = ""
     reconcile_period   = ""
   }
