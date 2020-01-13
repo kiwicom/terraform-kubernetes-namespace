@@ -21,7 +21,7 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   data = {
-    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}${local.gcr_dockercfg}"
+    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}${local.gcr_dockercfg}}"
   }
 
   type = "kubernetes.io/dockercfg"
