@@ -4,7 +4,7 @@ locals {
   vault_addr               = var.vault_sync["addr"]
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
-  vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "5m")
+  vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "10m")
 }
 
 resource "kubernetes_namespace" "ns" {
