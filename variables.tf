@@ -45,6 +45,11 @@ variable "gitlab_rancher_password" {
   description = "Gitlab password of Rancher user"
 }
 
+variable "gcr_sa" {
+  description = "Service account for accessing eu.gcr.io Docker registry (base64 encoded)"
+  default = ""
+}
+
 variable "cpu_request" {
   description = "CPU Request"
   default     = "400m"

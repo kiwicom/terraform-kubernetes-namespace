@@ -1,4 +1,5 @@
 locals {
+  gcr_dockercfg            = var.gcr_sa != "" ? ",\"eu.gcr.io\":{\"username\":\"_json_key\",\"password\":${jsonencode(base64decode(var.gcr_sa))}" : ""
   vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
   vault_addr               = var.vault_sync["addr"]
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
@@ -20,7 +21,7 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   data = {
-    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}}"
+    ".dockercfg" = "{\"${var.gitlab_registry}\":{\"username\":\"${var.gitlab_rancher_username}\",\"password\":\"${var.gitlab_rancher_password}\"}${local.gcr_dockercfg}"
   }
 
   type = "kubernetes.io/dockercfg"
