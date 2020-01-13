@@ -22,7 +22,7 @@ module "example_namespace" {
 }
 ```
 
-### vault_sync
+### vault_sync (optional)
 
 Note: `vault_sync` only works with `k8s-vault-operator` which is currently in private mode.
 
