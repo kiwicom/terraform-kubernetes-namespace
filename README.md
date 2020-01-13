@@ -24,7 +24,7 @@ module "example_namespace" {
 
 ### vault_sync
 
-Note: `vault_sync` only works with [`k8s-vault-operator`](https://gitlab.skypicker.com/platform/infra/k8s-vault-operator) which is currently in private mode.
+Note: `vault_sync` only works with `k8s-vault-operator` which is currently in private mode.
 
 When `vault_sync` is enabled, secrets from Vault will be synchronized automatically after `reconcile_period` (default: `10m`) and after each `terraform apply`.
 
