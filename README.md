@@ -3,12 +3,12 @@
 ## Usage
 
 ```hcl-terraform
-module "example_namespace" {
+module "example_project" {
   source  = "kiwicom/namespace/kubernetes"
   version = "~> 2.0.0"
 
   project_id              = "gcp-project-id"
-  name                    = "example-namespace"
+  name                    = "example-project"
   gitlab_rancher_password = "GITLAB_REGISTRY_PASSWORD"
   run_template_dir        = false
   
@@ -24,7 +24,7 @@ module "example_namespace" {
 
 ### vault_sync
 
-When `vault_sync` is enabled, secrets from Vault will be synchronized automatically after `reconcile_period` (default: `5m`) and after each `terraform apply`.
+When `vault_sync` is enabled, it means that secrets from Vault will be synchronized automatically after `reconcile_period` and after every `terraform apply`.
 
 By default, secrets will be synchronized from `var.VAULT_PROJECT_SECRETS_PATH/ns-${var.name}-secrets` path.
 
