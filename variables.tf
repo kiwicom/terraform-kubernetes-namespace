@@ -2,10 +2,8 @@ variable "name" {
   description = "Namespace name"
 }
 
-// TODO: remove default = "" after migraton
 variable "project_id" {
   description = "Google Cloud Platform project id"
-  default     = ""
 }
 
 variable "vault_sync" {
@@ -23,12 +21,6 @@ variable "vault_sync" {
     target_secret_name = ""
     reconcile_period   = ""
   }
-}
-
-// TODO: will be removed after migration
-variable "vault_path" {
-  description = "Like secret/team_name/cluster_name/namespace"
-  default     = ""
 }
 
 variable "gitlab_registry" {
