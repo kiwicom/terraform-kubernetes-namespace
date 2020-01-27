@@ -6,6 +6,11 @@ variable "project_id" {
   description = "Google Cloud Platform project id"
 }
 
+variable "shared_vpc" {
+  description = "Declares whether project is within shared VPC"
+  default = true
+}
+
 variable "vault_sync" {
   type = object({
     addr               = string
