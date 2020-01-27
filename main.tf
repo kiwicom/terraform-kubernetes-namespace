@@ -1,9 +1,11 @@
 locals {
   gcr_dockercfg            = var.gcr_sa != "" ? ",\"eu.gcr.io\":{\"username\":\"_json_key\",\"password\":${jsonencode(base64decode(var.gcr_sa))}}" : ""
-  vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
+  vault_sync_enabled       = var.vault_sync["base_path"] != ""
+  vault_auto_sync_enabled  = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
   vault_addr               = var.vault_sync["addr"]
-  vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
-  vault_target_secret_name = var.vault_sync["target_secret_name"]
+  vault_secrets_path       = "${var.vault_sync["base_path"]}/${coalesce(var.vault_sync["secrets_path"], concat("ns-", var.name, "-secrets"))}"
+//  vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
+  vault_target_secret_name = coalesce(var.vault_sync["target_secret_name"], "")
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "10m")
 }
 
@@ -64,7 +66,7 @@ resource "template_dir" "k8s" {
 }
 
 resource vault_policy "project_namespace_policy" {
-  count = local.vault_sync_enabled ? 1 : 0
+  count = local.vault_auto_sync_enabled ? 1 : 0
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
@@ -80,7 +82,7 @@ EOT
 }
 
 resource "vault_token_auth_backend_role" "project_namespace_role" {
-  count            = local.vault_sync_enabled ? 1 : 0
+  count            = local.vault_auto_sync_enabled ? 1 : 0
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
@@ -88,7 +90,7 @@ resource "vault_token_auth_backend_role" "project_namespace_role" {
 }
 
 resource "vault_token" "project_namespace_token" {
-  count             = local.vault_sync_enabled ? 1 : 0
+  count             = local.vault_auto_sync_enabled ? 1 : 0
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
@@ -109,7 +111,7 @@ resource "kubernetes_secret" "k8s_secrets" {
 }
 
 resource "kubernetes_secret" "vault_token_secret" {
-  count = local.vault_sync_enabled ? 1 : 0
+  count = local.vault_auto_sync_enabled ? 1 : 0
 
   metadata {
     name      = "vault-sync-secret"

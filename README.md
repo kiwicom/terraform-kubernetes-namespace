@@ -15,14 +15,28 @@ module "example_namespace" {
   vault_sync = {
     addr               = "https://your-vault-address"
     base_path          = var.VAULT_PROJECT_SECRETS_PATH
-    secrets_path       = ""
+    secrets_path       = "" // Defaults to `ns-{name}-secrets`
     target_secret_name = ""
     reconcile_period   = ""
   }
 }
 ```
 
-### vault_sync (optional)
+### vault_sync
+
+`vault_sync` is optional and can work in two different modes.
+
+Auto sync will work only for projects inside a shared VPC.
+
+#### sync on `terraform apply`
+
+
+
+#### auto sync
+
+
+
+#### 
 
 Note: `vault_sync` only works with `k8s-vault-operator` which is currently in private mode.
 
@@ -32,7 +46,7 @@ By default, secrets will be synchronized from `var.VAULT_PROJECT_SECRETS_PATH/ns
 
 `vault_sync` will not be configured by default and in order to enable it, you need to include a `vault_sync` block. If you do not set `addr` and `base_path`, `vault_sync` will not be configured.
 
-* `addr`: Vault address, must be provided
+* `addr`: Vault address. Set to empty (``) if you want to disable auto sync and only want
 * `base_path`: base path for the Vault secrets, must be provided
 * `secrets_path`: path to Vault secrets. Defaults to `ns-{name}-secrets`
 * `target_secret_name`: Kubernetes secret name. Defaults to `kubernetes_secret.k8s_secrets[0].metadata[0].name` aka `{name}-secrets`
