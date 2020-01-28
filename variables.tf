@@ -8,7 +8,7 @@ variable "project_id" {
 
 variable "shared_vpc" {
   description = "Declares whether project is within shared VPC"
-  default = true
+  default     = true
 }
 
 variable "vault_sync" {
@@ -44,7 +44,7 @@ variable "gitlab_rancher_password" {
 
 variable "gcr_sa" {
   description = "Service account for accessing eu.gcr.io Docker registry (base64 encoded)"
-  default = ""
+  default     = ""
 }
 
 variable "cpu_request" {
