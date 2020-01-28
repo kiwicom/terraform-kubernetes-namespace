@@ -32,7 +32,7 @@ module "example_namespace" {
 * `target_secret_name`: Kubernetes secret name. Defaults to `kubernetes_secret.k8s_secrets[0].metadata[0].name` aka `{name}-secrets`
 * `reconcile_period`: duration between Vault checks. Defaults to `10m`. This parameter accepts Golang's `time.Time` values, which are in the following format: `30s`, `10m`, `1h`, `1h10m30s`
 
-#### Projects in shared VPC
+#### Mode 1: Projects in shared VPC
 
 ```hcl-terraform
 module "example_namespace" {
@@ -69,7 +69,7 @@ A valid `Secret` will look like this (note the name `vault-sync-secret`):
 
 > {"level":"info","ts":1578903069.236135,"logger":"controller_autosync","msg":"Reconciling Secret","Request.Namespace":"gds-queue-handler","Request.Name":"vault-sync-secret"}
 
-#### Projects not in shared VPC
+#### Mode 2: Projects not in shared VPC
 
 ```hcl-terraform
 module "example_namespace" {
