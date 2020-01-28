@@ -1,6 +1,7 @@
 locals {
   gcr_dockercfg            = var.gcr_sa != "" ? ",\"eu.gcr.io\":{\"username\":\"_json_key\",\"password\":${jsonencode(base64decode(var.gcr_sa))}}" : ""
-  vault_sync_enabled       = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != ""
+  vault_sync_enabled       = var.vault_sync["base_path"] != ""
+  vault_auto_sync_enabled  = var.vault_sync["addr"] != "" && var.vault_sync["base_path"] != "" && var.shared_vpc
   vault_addr               = var.vault_sync["addr"]
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
@@ -50,11 +51,6 @@ resource "kubernetes_limit_range" "limits" {
   }
 }
 
-data "vault_generic_secret" "k8s" {
-  count = var.vault_path == "" ? 0 : 1
-  path  = var.vault_path
-}
-
 data "vault_generic_secret" "namespace_secrets" {
   count = local.vault_sync_enabled ? 1 : 0
   path  = local.vault_secrets_path
@@ -68,10 +64,8 @@ resource "template_dir" "k8s" {
   vars = merge(var.additional_k8s_vars)
 }
 
-// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
-// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource vault_policy "project_namespace_policy" {
-  count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+  count = local.vault_auto_sync_enabled ? 1 : 0
   name  = "tf-gcp-projects-${var.project_id}-${var.name}-read"
 
   policy = <<EOT
@@ -86,20 +80,16 @@ path "${local.vault_secrets_path}" {
 EOT
 }
 
-// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
-// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "vault_token_auth_backend_role" "project_namespace_role" {
-  count            = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+  count            = local.vault_auto_sync_enabled ? 1 : 0
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
   token_type       = "" // change to default-service once we will migrate to Vault 1.x
 }
 
-// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
-// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "vault_token" "project_namespace_token" {
-  count             = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+  count             = local.vault_auto_sync_enabled ? 1 : 0
   display_name      = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   role_name         = vault_token_auth_backend_role.project_namespace_role[0].role_name
   policies          = [vault_policy.project_namespace_policy[0].name]
@@ -108,23 +98,19 @@ resource "vault_token" "project_namespace_token" {
   ttl               = 15768000 // 0.5 years
 }
 
-// TODO: IS: count = var.vault_path != "" ? 1 : (local.vault_sync_enabled ? 1 : 0)
-// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "kubernetes_secret" "k8s_secrets" {
-  count = var.vault_path != "" ? 1 : (local.vault_sync_enabled ? 1 : 0)
+  count = local.vault_sync_enabled ? 1 : 0
 
   metadata {
     name      = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 
-  data = var.vault_path == "" ? data.vault_generic_secret.namespace_secrets[0].data : data.vault_generic_secret.k8s[0].data
+  data = data.vault_generic_secret.namespace_secrets[0].data
 }
 
-// TODO: IS: count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
-// TODO: SHOULD: count = local.vault_sync_enabled ? 1 : 0
 resource "kubernetes_secret" "vault_token_secret" {
-  count = (local.vault_sync_enabled || var.vault_path != "") && var.project_id != "" ? 1 : 0
+  count = local.vault_auto_sync_enabled ? 1 : 0
 
   metadata {
     name      = "vault-sync-secret"

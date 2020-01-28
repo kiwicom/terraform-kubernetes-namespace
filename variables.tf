@@ -2,10 +2,13 @@ variable "name" {
   description = "Namespace name"
 }
 
-// TODO: remove default = "" after migraton
 variable "project_id" {
   description = "Google Cloud Platform project id"
-  default     = ""
+}
+
+variable "shared_vpc" {
+  description = "Declares whether project is within shared VPC"
+  default     = true
 }
 
 variable "vault_sync" {
@@ -25,12 +28,6 @@ variable "vault_sync" {
   }
 }
 
-// TODO: will be removed after migration
-variable "vault_path" {
-  description = "Like secret/team_name/cluster_name/namespace"
-  default     = ""
-}
-
 variable "gitlab_registry" {
   description = "Gitlab registry from where to pull images"
   default     = "registry.skypicker.com:5005"
@@ -47,7 +44,7 @@ variable "gitlab_rancher_password" {
 
 variable "gcr_sa" {
   description = "Service account for accessing eu.gcr.io Docker registry (base64 encoded)"
-  default = ""
+  default     = ""
 }
 
 variable "cpu_request" {
