@@ -6,12 +6,19 @@ locals {
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "10m")
+  namespace_annotations    = merge(data.external.gitlab_ci_project_info.result/*, other annotations */)
+}
+
+# doesn't matter if not defined
+data "external" "gitlab_ci_project_info" {
+  program = ["bash", "-c", "jq -n --arg CI_PROJECT_ID \"$CI_PROJECT_ID\" --arg CI_PROJECT_PATH \"$CI_PROJECT_PATH\" '{\"CI_PROJECT_ID\":$CI_PROJECT_ID, \"CI_PROJECT_PATH\":$CI_PROJECT_PATH}'"]
 }
 
 resource "kubernetes_namespace" "ns" {
   metadata {
-    name   = var.name
-    labels = var.labels
+    name        = var.name
+    labels      = var.labels
+    annotations = local.namespace_annotations
   }
 }
 
