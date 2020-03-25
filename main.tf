@@ -81,7 +81,7 @@ path "auth/token/lookup-self" {
     capabilities = ["read"]
 }
 
-path "${local.vault_secrets_path}" {
+path "${local.vault_secrets_path}/*" {
   policy = "read"
 }
 EOT
