@@ -6,7 +6,12 @@ locals {
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "10m")
-  namespace_annotations    = merge(data.external.gitlab_ci_project_info.result/*, other annotations */)
+  rancher2_annotations     = var.rancher2_project_id != "" ? {"field.cattle.io/projectId" = var.rancher2_project_id} : {}
+  namespace_annotations    = merge(
+    data.external.gitlab_ci_project_info.result,
+    local.rancher2_annotations,
+    /*other annotations */
+  )
 }
 
 # doesn't matter if not defined

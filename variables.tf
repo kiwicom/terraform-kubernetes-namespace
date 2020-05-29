@@ -94,6 +94,11 @@ variable "labels" {
   default = {}
 }
 
+variable "rancher2_project_id" {
+  type = string
+  default = ""
+}
+
 locals {
   k8s_sources_templates_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}templates/${var.name}"
   k8s_sources_generated_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}generated/${var.name}"
