@@ -101,7 +101,7 @@ resource "vault_token_auth_backend_role" "project_namespace_role" {
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"
   allowed_policies = [vault_policy.project_namespace_policy[0].name]
   orphan           = true
-  token_type       = "" // change to default-service once we will migrate to Vault 1.x
+  token_type       = "default-service" // change to default-service once we will migrate to Vault 1.x
 }
 
 resource "vault_token" "project_namespace_token" {
