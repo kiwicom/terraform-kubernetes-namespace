@@ -11,23 +11,6 @@ variable "shared_vpc" {
   default     = true
 }
 
-variable "vault_sync" {
-  type = object({
-    addr               = string
-    base_path          = string
-    secrets_path       = string
-    target_secret_name = string
-    reconcile_period   = string
-  })
-  default = {
-    addr               = ""
-    base_path          = ""
-    secrets_path       = ""
-    target_secret_name = ""
-    reconcile_period   = ""
-  }
-}
-
 variable "gitlab_registry" {
   description = "Gitlab registry from where to pull images"
   default     = "registry.skypicker.com:5005"
