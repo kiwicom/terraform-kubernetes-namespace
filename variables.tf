@@ -11,23 +11,6 @@ variable "shared_vpc" {
   default     = true
 }
 
-variable "vault_sync" {
-  type = object({
-    addr               = string
-    base_path          = string
-    secrets_path       = string
-    target_secret_name = string
-    reconcile_period   = string
-  })
-  default = {
-    addr               = ""
-    base_path          = ""
-    secrets_path       = ""
-    target_secret_name = ""
-    reconcile_period   = ""
-  }
-}
-
 variable "gitlab_registry" {
   description = "Gitlab registry from where to pull images"
   default     = "registry.skypicker.com:5005"
@@ -102,4 +85,18 @@ variable "rancher2_project_id" {
 locals {
   k8s_sources_templates_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}templates/${var.name}"
   k8s_sources_generated_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}generated/${var.name}"
+}
+
+variable "base_path" {
+  description = "gitlab base path for vault integration"
+}
+
+variable "vault_additional_policies" {
+  default = []
+  description = "Additional policies assigned to apps in this namespace"
+}
+
+variable "okta_maintainer_groups" {
+  default = []
+  description = "Maintainer groups"
 }
