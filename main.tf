@@ -6,12 +6,29 @@ locals {
   vault_secrets_path       = var.vault_sync["secrets_path"] != "" ? "${var.vault_sync["base_path"]}/${var.vault_sync["secrets_path"]}"  : "${var.vault_sync["base_path"]}/ns-${var.name}-secrets"
   vault_target_secret_name = var.vault_sync["target_secret_name"]
   vault_reconcile_period   = coalesce(var.vault_sync["reconcile_period"], "10m")
-  rancher2_annotations     = var.rancher2_project_id != "" ? {"field.cattle.io/projectId" = var.rancher2_project_id} : {}
-  namespace_annotations    = merge(
+
+  rancher2_namespace_annotations = var.rancher2_project_id != "" ? {
+    "field.cattle.io/projectId" = var.rancher2_project_id
+    "cattle.io/status" = null // ignore changes
+    "lifecycle.cattle.io/create.namespace-auth" = null // ignore changes
+  } : {}
+  rancher2_namespace_labels = var.rancher2_project_id != "" ? {
+    "field.cattle.io/projectId" = null // ignore changes
+  } : {}
+  namespace_annotations = merge(
     data.external.gitlab_ci_project_info.result,
-    local.rancher2_annotations,
+    local.rancher2_namespace_annotations,
     /*other annotations */
   )
+  namespace_labels = merge(
+    var.labels,
+    local.rancher2_namespace_labels,
+    /*other labels */
+  )
+
+  secret_annotations = var.rancher2_project_id != "" ? {
+    "field.cattle.io/projectId" = null
+  } : {}
 }
 
 # doesn't matter if not defined
@@ -22,15 +39,24 @@ data "external" "gitlab_ci_project_info" {
 resource "kubernetes_namespace" "ns" {
   metadata {
     name        = var.name
-    labels      = var.labels
+    labels      = local.namespace_labels
     annotations = local.namespace_annotations
+  }
+
+  lifecycle {
+    ignore_changes = [
+      metadata.0.annotations["cattle.io/status"],
+      metadata.0.annotations["lifecycle.cattle.io/create.namespace-auth"],
+      metadata.0.labels["field.cattle.io/projectId"],
+    ]
   }
 }
 
 resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   metadata {
-    name      = "gitlab"
-    namespace = kubernetes_namespace.ns.metadata[0].name
+    name        = "gitlab"
+    namespace   = kubernetes_namespace.ns.metadata[0].name
+    annotations = local.secret_annotations
   }
 
   data = {
@@ -38,6 +64,12 @@ resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
   }
 
   type = "kubernetes.io/dockercfg"
+
+  lifecycle {
+    ignore_changes = [
+      metadata.0.annotations["field.cattle.io/projectId"],
+    ]
+  }
 }
 
 resource "kubernetes_limit_range" "limits" {
@@ -118,19 +150,27 @@ resource "kubernetes_secret" "k8s_secrets" {
   count = local.vault_sync_enabled ? 1 : 0
 
   metadata {
-    name      = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
-    namespace = kubernetes_namespace.ns.metadata[0].name
+    name        = "${kubernetes_namespace.ns.metadata[0].name}-secrets"
+    namespace   = kubernetes_namespace.ns.metadata[0].name
+    annotations = local.secret_annotations
   }
 
   data = data.vault_generic_secret.namespace_secrets[0].data
+
+  lifecycle {
+    ignore_changes = [
+      metadata.0.annotations["field.cattle.io/projectId"],
+    ]
+  }
 }
 
 resource "kubernetes_secret" "vault_token_secret" {
   count = local.vault_auto_sync_enabled ? 1 : 0
 
   metadata {
-    name      = "vault-sync-secret"
-    namespace = kubernetes_namespace.ns.metadata[0].name
+    name        = "vault-sync-secret"
+    namespace   = kubernetes_namespace.ns.metadata[0].name
+    annotations = local.secret_annotations
   }
 
   data = {
@@ -139,6 +179,12 @@ resource "kubernetes_secret" "vault_token_secret" {
     VAULT_PATH         = data.vault_generic_secret.namespace_secrets[0].path
     TARGET_SECRET_NAME = local.vault_target_secret_name == "" ? kubernetes_secret.k8s_secrets[0].metadata[0].name : local.vault_target_secret_name
     RECONCILE_PERIOD   = local.vault_reconcile_period
+  }
+
+  lifecycle {
+    ignore_changes = [
+      metadata.0.annotations["field.cattle.io/projectId"],
+    ]
   }
 }
 
@@ -171,7 +217,14 @@ resource "kubernetes_cluster_role" "ci_deploy" {
   }
 }
 
+locals {
+  deploy_user       = compact(concat(google_service_account.ci_deploy.*.email, [var.deploy_user]))
+  deploy_user_count = length(local.deploy_user) == 0 ? 0 : 1
+}
+
 resource "kubernetes_cluster_role_binding" "ci_deploy" {
+  count = local.deploy_user_count
+
   metadata {
     name = "ci-deploy-user-${kubernetes_namespace.ns.metadata[0].name}"
   }
@@ -185,8 +238,7 @@ resource "kubernetes_cluster_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name = concat(google_service_account.ci_deploy.*.email, [
-      var.deploy_user])[0]
+    name      = local.deploy_user[0]
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
@@ -227,6 +279,8 @@ resource "kubernetes_role" "ci_deploy" {
 }
 
 resource "kubernetes_role_binding" "ci_deploy" {
+  count = local.deploy_user_count
+
   metadata {
     name      = "ci-deploy-user-binding"
     namespace = kubernetes_namespace.ns.metadata[0].name
@@ -241,8 +295,7 @@ resource "kubernetes_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name = concat(google_service_account.ci_deploy.*.email, [
-      var.deploy_user])[0]
+    name      = local.deploy_user[0]
   }
 }
 
@@ -266,6 +319,8 @@ resource "kubernetes_role" "ci_deploy_read_dd_config" {
 }
 
 resource "kubernetes_role_binding" "ci_deploy_read_dd_config" {
+  count = local.deploy_user_count
+
   metadata {
     name      = "ci-${kubernetes_namespace.ns.metadata[0].name}-binding-dd-config"
     namespace = "system"
@@ -280,8 +335,7 @@ resource "kubernetes_role_binding" "ci_deploy_read_dd_config" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name = concat(google_service_account.ci_deploy.*.email, [
-      var.deploy_user])[0]
+    name      = local.deploy_user[0]
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
@@ -316,7 +370,7 @@ resource "kubernetes_service_account" "ci_deploy" {
 data "kubernetes_secret" "ci_deploy_token" {
   metadata {
     name      = kubernetes_service_account.ci_deploy.default_secret_name
-    namespace = kubernetes_namespace.ns.metadata[0].name
+    namespace = kubernetes_service_account.ci_deploy.metadata.0.namespace
   }
 }
 
