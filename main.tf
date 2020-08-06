@@ -218,8 +218,8 @@ resource "kubernetes_cluster_role" "ci_deploy" {
 }
 
 locals {
-  deploy_user       = compact(concat(google_service_account.ci_deploy.*.email, [var.deploy_user]))
-  deploy_user_count = length(local.deploy_user) == 0 ? 0 : 1
+  deploy_user       = var.should_create_deploy_user == 1 ? google_service_account.ci_deploy.0.email : var.deploy_user
+  deploy_user_count = var.should_create_deploy_user == 1 || var.deploy_user != "" ? 1 : 0
 }
 
 resource "kubernetes_cluster_role_binding" "ci_deploy" {
@@ -238,7 +238,7 @@ resource "kubernetes_cluster_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name      = local.deploy_user[0]
+    name      = local.deploy_user
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
@@ -295,7 +295,7 @@ resource "kubernetes_role_binding" "ci_deploy" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name      = local.deploy_user[0]
+    name      = local.deploy_user
   }
 }
 
@@ -335,7 +335,7 @@ resource "kubernetes_role_binding" "ci_deploy_read_dd_config" {
   subject {
     api_group = "rbac.authorization.k8s.io"
     kind      = "User"
-    name      = local.deploy_user[0]
+    name      = local.deploy_user
     namespace = kubernetes_namespace.ns.metadata[0].name
   }
 }
