@@ -1,3 +1,20 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
+  required_providers {
+    external = {
+      source = "hashicorp/external"
+    }
+    google = {
+      source = "hashicorp/google"
+    }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+    }
+    template = {
+      source = "hashicorp/template"
+    }
+    vault = {
+      source = "hashicorp/vault"
+    }
+  }
 }
