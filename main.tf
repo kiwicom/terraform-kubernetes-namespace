@@ -128,6 +128,26 @@ path "${local.vault_secrets_path}/*" {
 EOT
 }
 
+resource vault_policy "project_namespace_write_policy" {
+  count = local.vault_auto_sync_enabled && var.create_vault_write_policy ? 1 : 0
+  name  = "tf-gcp-projects-${var.project_id}-${var.name}-write"
+
+  policy = <<EOT
+# Allow tokens to look up their own properties
+path "auth/token/lookup-self" {
+    capabilities = ["read"]
+}
+
+path "${local.vault_secrets_path}" {
+  policy = "write"
+}
+
+path "${local.vault_secrets_path}/*" {
+  policy = "write"
+}
+EOT
+}
+
 resource "vault_token_auth_backend_role" "project_namespace_role" {
   count            = local.vault_auto_sync_enabled ? 1 : 0
   role_name        = "tf-gcp-projects-${var.project_id}-${var.name}-read"

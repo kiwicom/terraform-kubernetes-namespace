@@ -28,6 +28,11 @@ variable "vault_sync" {
   }
 }
 
+variable "create_vault_write_policy" {
+  description = "Whether a new Vault policy should be created to grant write access to these secrets; depends on vault_sync"
+  default = false
+}
+
 variable "gitlab_registry" {
   description = "Gitlab registry from where to pull images"
   default     = "registry.skypicker.com:5005"
