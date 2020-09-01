@@ -13,8 +13,5 @@ terraform {
     template = {
       source = "hashicorp/template"
     }
-    vault = {
-      source = "hashicorp/vault"
-    }
   }
 }
