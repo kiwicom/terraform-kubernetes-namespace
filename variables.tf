@@ -77,6 +77,11 @@ variable "k8s_sources_path" {
   default     = ""
 }
 
+variable "k8s_sources_path_split_workspace" {
+  type    = bool
+  default = false
+}
+
 variable "run_template_dir" {
   default = true
 }
@@ -100,6 +105,7 @@ variable "rancher2_project_id" {
 }
 
 locals {
+  k8s_sources_generated_path_workspace = var.k8s_sources_path_split_workspace ? "${terraform.workspace}/" : ""
   k8s_sources_templates_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}templates/${var.name}"
-  k8s_sources_generated_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}generated/${var.name}"
+  k8s_sources_generated_path = "${var.k8s_sources_path != "" ? var.k8s_sources_path : "${path.root}/k8s/"}generated/${local.k8s_sources_generated_path_workspace}${var.name}"
 }
