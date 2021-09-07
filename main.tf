@@ -50,6 +50,10 @@ resource "kubernetes_namespace" "ns" {
       metadata.0.labels["field.cattle.io/projectId"],
     ]
   }
+
+  timeouts {
+    delete = "15m"
+  }
 }
 
 resource "kubernetes_secret" "gitlab_docker_registry_credentials" {
