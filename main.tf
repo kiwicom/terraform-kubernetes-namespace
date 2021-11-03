@@ -195,9 +195,10 @@ resource "google_service_account" "ci_deploy" {
 }
 
 resource "google_project_iam_member" "ci_deploy" {
-  count  = var.should_create_deploy_user
-  role   = "roles/container.clusterViewer"
-  member = "serviceAccount:${google_service_account.ci_deploy[0].email}"
+  count   = var.should_create_deploy_user
+  project = var.project_id
+  role    = "roles/container.clusterViewer"
+  member  = "serviceAccount:${google_service_account.ci_deploy[0].email}"
 }
 
 resource "kubernetes_cluster_role" "ci_deploy" {
